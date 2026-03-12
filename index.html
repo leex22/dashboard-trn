@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard De Treinamento</title>
+    <title>Dashboard Operational Excellence</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -182,7 +182,6 @@
                 if (!response.ok) response = await fetch('dados.csv');
                 if (!response.ok) throw new Error("Arquivo não encontrado");
 
-                // CAPTURA DA DATA DA ÚLTIMA ATUALIZAÇÃO
                 const lastMod = response.headers.get('Last-Modified');
                 if (lastMod) {
                     const date = new Date(lastMod);
@@ -216,24 +215,98 @@
             updateCascade(); 
         }
 
-        function renderDropdown(id, key, opts) {
-            const container = document.getElementById(id); container.innerHTML = '<div class="search-filter-input"><input type="text" placeholder="🔍 Filtrar..." onkeyup="filterDrop(\''+id+'\', this.value)"></div>';
-            opts.filter(o => o).forEach(o => {
-                const div = document.createElement('div'); div.className = 'dropdown-item flex items-center gap-2 p-2 text-sm cursor-pointer';
-                div.innerHTML = `<input type="checkbox" ${selectedFilters[key].includes(o)?'checked':''} onchange="handleF('${key}','${o}')"><span>${o}</span>`;
-                div.onclick = (e) => { if(e.target.tagName !== 'INPUT') { const c = div.querySelector('input'); c.checked = !c.checked; c.dispatchEvent(new Event('change')); }};
-                container.appendChild(div);
+        function renderDropdown(elementId, filterKey, options) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            
+            const searchDiv = document.createElement('div');
+            searchDiv.className = 'search-filter-input';
+            searchDiv.innerHTML = `<input type="text" placeholder="🔍 Pesquisar..." class="text-xs" onkeyup="filterDropdownOptions('${elementId}', this.value)" onclick="event.stopPropagation()">`;
+            container.appendChild(searchDiv);
+
+            const optionsContainer = document.createElement('div');
+            optionsContainer.className = 'p-2 space-y-1';
+
+            const validOptions = options.filter(o => o);
+
+            if (validOptions.length > 0) {
+                const selectAllDiv = document.createElement('div');
+                selectAllDiv.className = 'dropdown-item select-all-item flex items-center gap-2 p-2 rounded cursor-pointer text-sm font-bold border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800';
+                const isAllSelected = validOptions.every(opt => selectedFilters[filterKey].includes(opt));
+                selectAllDiv.innerHTML = `<input type="checkbox" id="selectAll_${filterKey}" ${isAllSelected ? 'checked' : ''}> <span>Selecionar Todos</span>`;
+                
+                selectAllDiv.onclick = (e) => { 
+                    const cb = selectAllDiv.querySelector('input');
+                    if(e.target !== cb) { cb.checked = !cb.checked; }
+                    
+                    const isChecked = cb.checked;
+                    selectedFilters[filterKey] = isChecked ? [...validOptions] : [];
+                    
+                    container.querySelectorAll('.filter-checkbox').forEach(input => {
+                        input.checked = isChecked;
+                    });
+                    
+                    updateButtonLabel(filterKey);
+                    if (filterKey === 'methods') updateCascade();
+                    updateDashboard();
+                };
+                optionsContainer.appendChild(selectAllDiv);
+            }
+
+            validOptions.forEach(opt => {
+                const div = document.createElement('div');
+                div.className = 'dropdown-item flex items-center gap-2 p-2 rounded cursor-pointer text-sm';
+                const isChecked = selectedFilters[filterKey].includes(opt);
+                div.innerHTML = `<input type="checkbox" class="filter-checkbox" ${isChecked ? 'checked' : ''} onchange="handleFilterChange('${filterKey}', '${opt}')"> <span>${opt}</span>`;
+                div.onclick = (e) => { if(e.target.tagName !== 'INPUT') { const cb = div.querySelector('input'); cb.checked = !cb.checked; cb.dispatchEvent(new Event('change')); }};
+                optionsContainer.appendChild(div);
             });
-            updateBtn(key);
+            
+            container.appendChild(optionsContainer);
+            updateButtonLabel(filterKey);
         }
 
-        function filterDrop(id, t) { document.querySelectorAll(`#${id} .dropdown-item`).forEach(i => i.style.display = i.textContent.toLowerCase().includes(t.toLowerCase()) ? '' : 'none'); }
-        function handleF(k, v) { const i = selectedFilters[k].indexOf(v); if(i>-1) selectedFilters[k].splice(i,1); else selectedFilters[k].push(v); updateBtn(k); if(k==='methods') updateCascade(); updateDashboard(); }
-        function updateBtn(k) { const b = {methods:'btnMethod',courses:'btnCourse',events:'btnEvent',facilitators:'btnFac',roles:'btnRole'}[k]; document.getElementById(b).querySelector('span').textContent = selectedFilters[k].length === 0 ? 'Selecionar...' : `${selectedFilters[k].length} sel.`; }
-        
+        function filterDropdownOptions(dropId, term) {
+            const items = document.querySelectorAll(`#${dropId} .dropdown-item:not(.select-all-item)`);
+            items.forEach(item => {
+                const text = item.querySelector('span').textContent.toLowerCase();
+                item.style.display = text.includes(term.toLowerCase()) ? 'flex' : 'none';
+            });
+        }
+
+        function handleFilterChange(key, value) {
+            const index = selectedFilters[key].indexOf(value);
+            if (index > -1) selectedFilters[key].splice(index, 1);
+            else selectedFilters[key].push(value);
+            
+            const dropId = { methods: 'dropMethod', courses: 'dropCourse', events: 'dropEvent', facilitators: 'dropFac', roles: 'dropRole' }[key];
+            const selectAllCb = document.getElementById(`selectAll_${key}`);
+            if(selectAllCb) {
+                const visibleCheckboxes = document.querySelectorAll(`#${dropId} .filter-checkbox`);
+                const allChecked = Array.from(visibleCheckboxes).every(c => c.checked);
+                selectAllCb.checked = allChecked;
+            }
+
+            updateButtonLabel(key);
+            if (key === 'methods') updateCascade();
+            updateDashboard();
+        }
+
+        function updateButtonLabel(key) {
+            const btnIdMap = { methods: 'btnMethod', courses: 'btnCourse', events: 'btnEvent', facilitators: 'btnFac', roles: 'btnRole' };
+            const count = selectedFilters[key].length;
+            document.getElementById(btnIdMap[key]).querySelector('span').textContent = count === 0 ? 'Selecionar...' : `${count} selecionado(s)`;
+        }
+
         function updateCascade() { 
             const filtered = selectedFilters.methods.length > 0 ? rawData.filter(i => selectedFilters.methods.includes(i[cols.method])) : rawData; 
-            document.getElementById('statusFilterContainer').className = selectedFilters.methods.some(m => m.includes("Computer")) ? "" : "hidden"; 
+            const statusContainer = document.getElementById('statusFilterContainer');
+            if (selectedFilters.methods.some(m => m.trim() === "Computer Based Training")) {
+                statusContainer.classList.remove('hidden');
+            } else {
+                statusContainer.classList.add('hidden');
+                document.getElementById('filterStatus').value = 'all'; 
+            }
             renderDropdown('dropCourse', 'courses', [...new Set(filtered.map(i => i[cols.course]))].sort()); 
             renderDropdown('dropEvent', 'events', [...new Set(filtered.map(i => i[cols.event]))].sort()); 
             renderDropdown('dropFac', 'facilitators', [...new Set(filtered.map(i => i[cols.facilitator]))].sort()); 
@@ -313,4 +386,3 @@
     </script>
 </body>
 </html>
-
