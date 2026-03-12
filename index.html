@@ -55,6 +55,7 @@
         <div>
             <h1 class="text-2xl font-bold text-primary dark:text-blue-400">📊 Dashboard de Treinamentos</h1>
             <p class="text-slate-500 dark:text-slate-400 text-sm">Gestão de Treinamentos e Capacitação</p>
+            <p id="lastUpdateInfo" class="text-[10px] text-slate-400 font-bold uppercase mt-1"></p>
         </div>
         <div class="flex items-center gap-3">
             <button onclick="exportDashboardToPDF()" class="bg-red-600 text-white px-4 py-2.5 rounded-lg hover:bg-red-700 transition shadow-md font-medium text-sm flex items-center gap-2">
@@ -128,6 +129,7 @@
                     </div>
                     <div class="h-80"><canvas id="chartCourses"></canvas></div>
                 </div>
+
                 <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96 relative" id="cardFacilitators">
                     <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm uppercase">👤 Top 5 Facilitadores</h3><div class="flex gap-1 items-center"><select class="chart-selector" onchange="changeChartType('chartFacilitators', this.value)"><option value="doughnut">Rosca</option><option value="pie">Pizza</option><option value="bar-v">Barra Vert.</option></select><button onclick="exportSingleChart('cardFacilitators', 'top-facilitadores')" class="btn-export-mini">PNG</button></div></div>
                     <div class="h-80"><canvas id="chartFacilitators"></canvas></div>
@@ -158,7 +160,6 @@
     </div>
 
     <script>
-        // --- PROTEÇÃO COM SENHA ---
         const SENHA_MESTRA = "1234"; 
         (function() {
             if (sessionStorage.getItem("dashboard_auth") !== "true") {
@@ -180,6 +181,14 @@
                 let response = await fetch('dados.xlsx');
                 if (!response.ok) response = await fetch('dados.csv');
                 if (!response.ok) throw new Error("Arquivo não encontrado");
+
+                // CAPTURA DA DATA DA ÚLTIMA ATUALIZAÇÃO
+                const lastMod = response.headers.get('Last-Modified');
+                if (lastMod) {
+                    const date = new Date(lastMod);
+                    document.getElementById('lastUpdateInfo').textContent = `Última atualização da base: ${date.toLocaleString('pt-BR')}`;
+                }
+
                 const arrayBuffer = await response.arrayBuffer();
                 const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
                 rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
@@ -276,7 +285,6 @@
             const rC = count(cols.role), rL = Object.keys(rC).sort((a,b)=>rC[b]-rC[a]);
             updateChart('chartRoles', chartConfigs.chartRoles.startsWith('bar')?'bar':chartConfigs.chartRoles, { labels: rL, datasets:[{ data: rL.map(l=>rC[l]), backgroundColor: '#10b981', borderRadius: 4 }] }, getBaseOptions(chartConfigs.chartRoles, '#10b981', isDark));
 
-            // LOGICA REVERTIDA DO ORIGINAL PARA TOP 5 TREINAMENTOS
             const cCounts = {}; 
             d.forEach(i => { if(i[cols.status]==='Completed') cCounts[i[cols.course]] = (cCounts[i[cols.course]]||0)+1; });
             const topC = Object.keys(cCounts).sort((a,b)=>cCounts[b]-cCounts[a]).slice(0,5);
