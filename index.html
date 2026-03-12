@@ -141,7 +141,7 @@
                 </div>
 
                 <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96 relative" id="cardFacilitators">
-                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm uppercase">👤 Top 5 Facilitadores</h3><div class="flex gap-1 items-center"><select class="chart-selector" onchange="changeChartType('chartFacilitators', this.value)"><option value="doughnut">Rosca</option><option value="pie">Pizza</option><option value="bar-v">Barra Vert.</option></select><button onclick="exportSingleChart('cardFacilitators', 'top-facilitadores')" class="btn-export-mini">PNG</button></div></div>
+                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm uppercase">👤 Top 5 Facilitadores</h3><div class="flex gap-1 items-center"><select class="chart-selector" onchange="changeChartType('chartFacilitators', this.value)"><option value="bar-v">Barra Vert.</option><option value="doughnut">Rosca</option><option value="pie">Pizza</option></select><button onclick="exportSingleChart('cardFacilitators', 'top-facilitadores')" class="btn-export-mini">PNG</button></div></div>
                     <div class="h-80"><canvas id="chartFacilitators"></canvas></div>
                 </div>
                 <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96 relative" id="cardMethods">
@@ -181,7 +181,7 @@
 
         Chart.register(ChartDataLabels);
         let rawData = [], currentFilteredData = [], charts = {}, selectedFilters = { methods: [], courses: [], events: [], facilitators: [], roles: [] };
-        let chartConfigs = { chartRoles: 'bar-h', chartCourses: 'bar-h', chartFacilitators: 'doughnut', chartMethods: 'pie' };
+        let chartConfigs = { chartRoles: 'bar-h', chartCourses: 'bar-h', chartFacilitators: 'bar-v', chartMethods: 'pie' };
         let cols = { fcp: 'FCP_COMBINED', name: 'Name', email: 'Email', course: 'Course Name', event: 'EVENT_NAME', status: 'STATUS', role: 'Role at FCP', facilitator: 'Partnership Facilitator', method: 'Training Method', date: 'ACTIVITY_DATE_TIME' };
 
         window.onload = carregarBaseAutomatica;
@@ -453,7 +453,7 @@
                                 const dataset = context.dataset;
                                 const total = dataset.data.reduce((a, b) => a + b, 0);
                                 const value = context.raw;
-                                const percentage = ((value / total) * 100).toFixed(1) + '%';
+                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) + '%' : '0%';
                                 const fullLabel = dataset.fullLabels ? dataset.fullLabels[context.dataIndex] : context.label;
                                 return `${fullLabel}: ${value} (${percentage})`;
                             }
@@ -463,9 +463,9 @@
                         display: true, color: '#fff', font: { size: 9, weight: 'bold' }, anchor: 'center', align: 'center',
                         formatter: (val, ctx) => {
                             const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                            const perc = ((val/sum)*100).toFixed(1) + '%';
+                            const perc = sum > 0 ? ((val/sum)*100).toFixed(1) + '%' : '0%';
                             const label = ctx.dataset.fullLabels ? ctx.dataset.fullLabels[ctx.dataIndex] : '';
-                            return t.startsWith('bar') ? `${label}\n${val} (${perc})` : perc;
+                            return t.startsWith('bar') ? (label ? label + '\n' : '') + val + ' (' + perc + ')' : perc;
                         }
                     } 
                 }, 
@@ -493,8 +493,11 @@
                 }]
             }, getBaseOptions(chartConfigs.chartCourses, '#005eb8', isDark));
 
-            const fC = count(cols.facilitator), fL = Object.keys(fC).sort((a,b)=>fC[b]-fC[a]).slice(0,5);
-            updateChart('chartFacilitators', chartConfigs.chartFacilitators.startsWith('bar')?'bar':chartConfigs.chartFacilitators, { labels: fL, datasets:[{ data: fL.map(l=>fC[l]), backgroundColor: colors, borderWidth: 0 }] }, getBaseOptions(chartConfigs.chartFacilitators, colors[0], isDark));
+            const cbtData = d.filter(i => i[cols.method] === 'Computer Based Training' && i[cols.status] === 'Completed');
+            const fC = {};
+            cbtData.forEach(i => { const f = i[cols.facilitator] || 'N/A'; fC[f] = (fC[f]||0)+1; });
+            const fL = Object.keys(fC).sort((a,b)=>fC[b]-fC[a]).slice(0,5);
+            updateChart('chartFacilitators', chartConfigs.chartFacilitators.startsWith('bar')?'bar':chartConfigs.chartFacilitators, { labels: fL, datasets:[{ label: 'Concluídos (CBT)', data: fL.map(l=>fC[l]), backgroundColor: colors, borderWidth: 0, borderRadius: 5 }] }, getBaseOptions(chartConfigs.chartFacilitators, colors[0], isDark));
 
             const mC = count(cols.method), mL = Object.keys(mC);
             updateChart('chartMethods', chartConfigs.chartMethods.startsWith('bar')?'bar':chartConfigs.chartMethods, { labels: mL, datasets:[{ data: mL.map(l=>mC[l]), backgroundColor: colors, borderWidth: 0 }] }, getBaseOptions(chartConfigs.chartMethods, colors[1], isDark));
