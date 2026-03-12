@@ -336,7 +336,19 @@
             return { 
                 indexAxis: t === 'bar-h' ? 'y' : 'x', 
                 plugins: { 
-                    legend: { display: ['pie','doughnut'].includes(t), labels: { color: textColor, font: { size: 10 } } }, 
+                    legend: { display: ['pie','doughnut'].includes(t), labels: { color: textColor, font: { size: 10 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const dataset = context.dataset;
+                                const total = dataset.data.reduce((a, b) => a + b, 0);
+                                const value = context.parsed.y !== undefined ? context.parsed.y : context.parsed;
+                                const percentage = ((value / total) * 100).toFixed(1) + '%';
+                                const fullLabel = dataset.fullLabels ? dataset.fullLabels[context.dataIndex] : context.label;
+                                return `${fullLabel}: ${value} (${percentage})`;
+                            }
+                        }
+                    },
                     datalabels: { 
                         display: true, color: '#fff', font: { size: 9, weight: 'bold' }, anchor: 'center', align: 'center',
                         formatter: (val, ctx) => {
