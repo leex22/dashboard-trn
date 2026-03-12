@@ -78,11 +78,11 @@
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div class="relative"><label class="label-filter">Método</label><button onclick="toggleDropdown('dropMethod')" id="btnMethod" class="flex justify-between items-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 p-2 rounded-md w-full text-left text-sm"><span>Selecionar...</span><span class="text-[10px]">▼</span></button><div id="dropMethod" class="dropdown-content"></div></div>
+                        <div class="relative"><label class="label-filter">Método de Treinamento</label><button onclick="toggleDropdown('dropMethod')" id="btnMethod" class="flex justify-between items-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 p-2 rounded-md w-full text-left text-sm"><span>Selecionar...</span><span class="text-[10px]">▼</span></button><div id="dropMethod" class="dropdown-content"></div></div>
                         <div class="relative"><label class="label-filter">Curso</label><button onclick="toggleDropdown('dropCourse')" id="btnCourse" class="flex justify-between items-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 p-2 rounded-md w-full text-left text-sm"><span>Selecionar...</span><span class="text-[10px]">▼</span></button><div id="dropCourse" class="dropdown-content"></div></div>
                         <div class="relative"><label class="label-filter">Evento</label><button onclick="toggleDropdown('dropEvent')" id="btnEvent" class="flex justify-between items-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 p-2 rounded-md w-full text-left text-sm"><span>Selecionar...</span><span class="text-[10px]">▼</span></button><div id="dropEvent" class="dropdown-content"></div></div>
                         <div class="relative"><label class="label-filter">Facilitador</label><button onclick="toggleDropdown('dropFac')" id="btnFac" class="flex justify-between items-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 p-2 rounded-md w-full text-left text-sm"><span>Selecionar...</span><span class="text-[10px]">▼</span></button><div id="dropFac" class="dropdown-content"></div></div>
-                        <div class="relative"><label class="label-filter">Função</label><button onclick="toggleDropdown('dropRole')" id="btnRole" class="flex justify-between items-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 p-2 rounded-md w-full text-left text-sm"><span>Selecionar...</span><span class="text-[10px]">▼</span></button><div id="dropRole" class="dropdown-content"></div></div>
+                        <div class="relative"><label class="label-filter">Função no Projeto</label><button onclick="toggleDropdown('dropRole')" id="btnRole" class="flex justify-between items-center bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 p-2 rounded-md w-full text-left text-sm"><span>Selecionar...</span><span class="text-[10px]">▼</span></button><div id="dropRole" class="dropdown-content"></div></div>
                         <div id="statusFilterContainer" class="hidden"><label class="label-filter">Status</label><select id="filterStatus" onchange="updateDashboard()"><option value="all">Todos</option><option value="Completed">Concluído ✅</option><option value="Enrolled">Inscrito 📝</option></select></div>
                     </div>
                 </div>
@@ -97,93 +97,107 @@
                 <div class="bg-white dark:bg-darkCard p-5 rounded-xl border-b-4 border-blue-600 shadow-sm text-center"><p class="text-xs font-bold text-slate-400 uppercase">Total Inscritos</p><h2 class="text-2xl font-bold" id="kpiTotal">0</h2></div>
                 <div class="bg-white dark:bg-darkCard p-5 rounded-xl border-b-4 border-green-500 shadow-sm text-center"><p class="text-xs font-bold text-slate-400 uppercase">Concluídos</p><h2 class="text-2xl font-bold text-green-600" id="kpiCompleted">0</h2></div>
                 <div class="bg-white dark:bg-darkCard p-5 rounded-xl border-b-4 border-amber-400 shadow-sm text-center"><p class="text-xs font-bold text-slate-400 uppercase">Em Andamento</p><h2 class="text-2xl font-bold text-amber-600" id="kpiEnrolled">0</h2></div>
-                <div class="bg-white dark:bg-darkCard p-5 rounded-xl border-b-4 border-purple-500 shadow-sm text-center"><p class="text-xs font-bold text-slate-400 uppercase">Taxa Conclusão</p><h2 class="text-2xl font-bold text-purple-600" id="kpiRate">0%</h2></div>
+                <div class="bg-white dark:bg-darkCard p-5 rounded-xl border-b-4 border-purple-500 shadow-sm text-center"><p class="text-xs font-bold text-slate-400 uppercase">Taxa de Conclusão</p><h2 class="text-2xl font-bold text-purple-600" id="kpiRate">0%</h2></div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96 relative" id="cardRoles">
+                <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm relative" id="cardRoles">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-sm uppercase">🏢 Adesão por Função</h3>
-                        <select class="chart-selector" onchange="changeChartType('chartRoles', this.value)"><option value="bar-h">Horizontal</option><option value="bar-v">Vertical</option></select>
+                        <div class="flex gap-1 items-center">
+                            <select class="chart-selector" onchange="changeChartType('chartRoles', this.value)"><option value="bar-h">Barra Horiz.</option><option value="bar-v">Barra Vert.</option><option value="pie">Pizza</option></select>
+                        </div>
                     </div>
-                    <div class="h-72"><canvas id="chartRoles"></canvas></div>
+                    <div class="h-80"><canvas id="chartRoles"></canvas></div>
                 </div>
-                <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96 overflow-hidden flex flex-col">
-                    <h3 class="font-bold text-sm uppercase mb-4">📅 Ranking de Eventos</h3>
-                    <div class="overflow-y-auto flex-grow"><table class="min-w-full"><thead><tr><th class="text-[10px] py-2">Evento</th><th class="text-[10px] py-2 text-right">Participantes</th></tr></thead><tbody id="eventSummaryBody"></tbody></table></div>
+                <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm overflow-hidden flex flex-col">
+                    <h3 class="font-bold text-sm uppercase mb-4">📅 Eventos de Treinamento</h3>
+                    <div class="overflow-y-auto flex-grow" style="max-height: 320px;"><table class="min-w-full"><thead class="sticky top-0 bg-white dark:bg-darkCard"><tr><th class="text-[10px] py-2">Evento</th><th class="text-[10px] py-2 text-right">Participantes</th></tr></thead><tbody id="eventSummaryBody"></tbody></table></div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96 relative" id="cardCourses">
-                    <h3 class="font-bold text-sm uppercase mb-4">🏆 Top 5 Treinamentos</h3>
-                    <div class="h-72"><canvas id="chartCourses"></canvas></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-sm uppercase">🏆 Top 5 Treinamentos</h3>
+                        <div class="flex gap-1 items-center">
+                            <select class="chart-selector" onchange="changeChartType('chartCourses', this.value)"><option value="bar-h">Barra Horiz.</option><option value="bar-v">Barra Vert.</option><option value="pie">Pizza</option></select>
+                        </div>
+                    </div>
+                    <div class="h-80"><canvas id="chartCourses"></canvas></div>
                 </div>
+
                 <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96 relative" id="cardFacilitators">
-                    <h3 class="font-bold text-sm uppercase mb-4">👤 Top 5 Facilitadores</h3>
-                    <div class="h-72"><canvas id="chartFacilitators"></canvas></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-sm uppercase">👤 Top 5 Facilitadores</h3>
+                        <div class="flex gap-1 items-center">
+                            <select class="chart-selector" onchange="changeChartType('chartFacilitators', this.value)"><option value="bar-v">Barra Vert.</option><option value="doughnut">Rosca</option></select>
+                        </div>
+                    </div>
+                    <div class="h-80"><canvas id="chartFacilitators"></canvas></div>
                 </div>
+
                 <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96 relative" id="cardMethods">
-                    <h3 class="font-bold text-sm uppercase mb-4">⚙️ Métodos</h3>
-                    <div class="h-72"><canvas id="chartMethods"></canvas></div>
+                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm uppercase">⚙️ Métodos</h3></div>
+                    <div class="h-80"><canvas id="chartMethods"></canvas></div>
                 </div>
             </div>
 
-            <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm mb-8 h-80 relative" id="cardTimeline">
-                <h3 class="font-bold text-sm uppercase mb-4">📈 Evolução Mensal</h3>
-                <div class="h-60"><canvas id="chartTimeline"></canvas></div>
+            <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm mb-8 relative" id="cardTimeline">
+                <h3 class="font-bold text-sm uppercase mb-4">📈 Evolução Mensal (Conclusões)</h3>
+                <div class="h-64"><canvas id="chartTimeline"></canvas></div>
             </div>
         </div>
 
         <section class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4"><h3 class="font-bold text-sm uppercase">📋 Dados Detalhados</h3><input type="text" id="tableSearch" placeholder="🔍 Pesquisar..." onkeyup="filterTable()" class="md:w-64 text-xs"></div>
-            <div class="overflow-x-auto"><table><thead><tr><th>FCP</th><th>Nome</th><th>Curso</th><th>Evento</th><th>Status</th><th>Função</th><th>Facilitador</th><th>Método</th></tr></thead><tbody id="tableBody"></tbody></table></div>
-            <p id="tableCounter" class="text-[10px] text-slate-400 mt-4 font-bold uppercase"></p>
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4"><h3 class="font-bold text-sm uppercase">📋 Detalhamento dos Dados</h3><input type="text" id="tableSearch" placeholder="🔍 Pesquisar na tabela..." onkeyup="filterTable()" class="md:w-64 text-xs"></div>
+            <div class="overflow-x-auto"><table><thead><tr><th>FCP</th><th>Nome</th><th>Email</th><th>Curso</th><th>Evento</th><th>Status</th><th>Função</th><th>Facilitador</th><th>Método</th></tr></thead><tbody id="tableBody"></tbody></table></div>
         </section>
     </main>
 
     <div id="noData" class="max-w-md mx-auto mt-32 text-center">
-        <div class="text-6xl mb-6">📂</div>
-        <h2 class="text-xl font-bold">A procurar 'dados.xlsx'...</h2>
-        <p class="text-slate-500 mt-2 text-sm">Verifique se o ficheiro está no repositório.</p>
+        <div class="text-6xl mb-6">📊</div>
+        <h2 class="text-xl font-bold">Carregando base de dados...</h2>
+        <p class="text-slate-500 mt-2">Certifique-se que o ficheiro dados.xlsx existe.</p>
     </div>
 
     <script>
+        // Autenticação simples
         const SENHA_MESTRA = "1234"; 
-        if (sessionStorage.getItem("dashboard_auth") !== "true") {
-            const p = prompt("Senha:");
-            if (p === SENHA_MESTRA) sessionStorage.setItem("dashboard_auth", "true");
-            else { alert("Errada"); document.body.innerHTML = ""; window.location.reload(); }
-        }
+        (function() {
+            if (sessionStorage.getItem("dashboard_auth") !== "true") {
+                const p = prompt("Acesso Restrito. Digite a senha:");
+                if (p === SENHA_MESTRA) { sessionStorage.setItem("dashboard_auth", "true"); } 
+                else { alert("Senha incorreta!"); document.body.innerHTML = "<h1>Acesso Negado</h1>"; window.location.reload(); }
+            }
+        })();
 
         Chart.register(ChartDataLabels);
         let rawData = [], currentFilteredData = [], charts = {}, selectedFilters = { methods: [], courses: [], events: [], facilitators: [], roles: [] };
         let chartConfigs = { chartRoles: 'bar-h', chartCourses: 'bar-h', chartFacilitators: 'bar-v', chartMethods: 'pie' };
         let cols = { fcp: 'FCP_COMBINED', name: 'Name', email: 'Email', course: 'Course Name', event: 'EVENT_NAME', status: 'STATUS', role: 'Role at FCP', facilitator: 'Partnership Facilitator', method: 'Training Method', date: 'ACTIVITY_DATE_TIME' };
 
-        window.onload = carregarBase;
+        window.onload = carregarBaseAutomatica;
 
-        async function carregarBase() {
+        async function carregarBaseAutomatica() {
             try {
-                // Truque para ignorar cache do GitHub (?t=...)
-                const response = await fetch('dados.xlsx?t=' + new Date().getTime());
+                let response = await fetch('dados.xlsx');
                 if (!response.ok) throw new Error();
                 const arrayBuffer = await response.arrayBuffer();
                 const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
                 rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
-                
                 if(rawData.length > 0) {
-                    if (!('STATUS' in rawData[0]) && ('ACTIVITY_CODE' in rawData[0])) cols.status = 'ACTIVITY_CODE';
+                    cols.status = ('ACTIVITY_CODE' in rawData[0]) ? 'ACTIVITY_CODE' : 'STATUS';
                     initDashboard();
                 }
             } catch (e) {
-                document.getElementById('noData').innerHTML = "<h2 class='text-red-500 font-bold'>Erro: Ficheiro 'dados.xlsx' não encontrado no GitHub.</h2><p class='text-xs'>Verifique se o nome está todo em minúsculas.</p>";
+                document.getElementById('noData').innerHTML = "<h2 class='text-red-500 font-bold'>Erro: Ficheiro 'dados.xlsx' não encontrado.</h2>";
             }
         }
 
         function toggleTheme() { document.documentElement.classList.toggle('dark'); updateDashboard(); }
-        window.onclick = e => { if (!e.target.closest('.relative')) document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
         function toggleDropdown(id) { document.querySelectorAll('.dropdown-content').forEach(d => { if (d.id !== id) d.classList.remove('show'); }); document.getElementById(id).classList.toggle('show'); }
+        function changeChartType(id, type) { chartConfigs[id] = type; updateDashboard(); }
 
         function initDashboard() { 
             document.getElementById('noData').classList.add('hidden'); 
@@ -196,124 +210,168 @@
 
         function renderDropdown(elementId, filterKey, options) {
             const container = document.getElementById(elementId);
-            container.innerHTML = `<div class='p-2'><input type="text" placeholder="Pesquisar..." class="text-xs w-full mb-2" onkeyup="filterDropdownOptions('${elementId}', this.value)"></div>`;
+            container.innerHTML = `<div class='search-filter-input'><input type='text' placeholder='Filtrar...' onkeyup="filterOptions('${elementId}', this.value)"></div>`;
             const list = document.createElement('div');
+            list.className = 'p-2';
             options.filter(o => o).forEach(opt => {
+                const isChecked = selectedFilters[filterKey].includes(opt);
                 const div = document.createElement('div');
-                div.className = 'dropdown-item p-2 text-xs flex items-center gap-2 cursor-pointer';
-                div.innerHTML = `<input type="checkbox" ${selectedFilters[filterKey].includes(opt)?'checked':''}> <span>${opt}</span>`;
+                div.className = 'flex items-center gap-2 p-1 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 rounded';
+                div.innerHTML = `<input type="checkbox" ${isChecked ? 'checked' : ''}> <span>${opt}</span>`;
                 div.onclick = () => {
                     const idx = selectedFilters[filterKey].indexOf(opt);
-                    if(idx > -1) selectedFilters[filterKey].splice(idx, 1); else selectedFilters[filterKey].push(opt);
-                    updateButtonLabel(filterKey);
+                    if(idx > -1) selectedFilters[filterKey].splice(idx, 1);
+                    else selectedFilters[filterKey].push(opt);
                     if(filterKey === 'methods') updateCascade();
                     updateDashboard();
-                    renderDropdown(elementId, filterKey, options);
                 };
                 list.appendChild(div);
             });
             container.appendChild(list);
         }
 
-        function filterDropdownOptions(id, term) {
-            document.querySelectorAll(`#${id} .dropdown-item`).forEach(item => {
-                item.style.display = item.textContent.toLowerCase().includes(term.toLowerCase()) ? 'flex' : 'none';
-            });
-        }
-
-        function updateButtonLabel(key) {
-            const btnMap = { methods: 'btnMethod', courses: 'btnCourse', events: 'btnEvent', facilitators: 'btnFac', roles: 'btnRole' };
-            const count = selectedFilters[key].length;
-            document.getElementById(btnMap[key]).querySelector('span').textContent = count === 0 ? 'Selecionar...' : `${count} selecionado(s)`;
-        }
-
-        function updateCascade() {
-            const filtered = selectedFilters.methods.length > 0 ? rawData.filter(i => selectedFilters.methods.includes(i[cols.method])) : rawData;
-            renderDropdown('dropCourse', 'courses', [...new Set(filtered.map(i => i[cols.course]))].sort());
-            renderDropdown('dropEvent', 'events', [...new Set(filtered.map(i => i[cols.event]))].sort());
-            renderDropdown('dropFac', 'facilitators', [...new Set(filtered.map(i => i[cols.facilitator]))].sort());
+        function updateCascade() { 
+            const filtered = selectedFilters.methods.length > 0 ? rawData.filter(i => selectedFilters.methods.includes(i[cols.method])) : rawData; 
+            const isCBTSelected = selectedFilters.methods.includes("Computer Based Training");
+            document.getElementById('statusFilterContainer').className = isCBTSelected ? 'block' : 'hidden';
+            renderDropdown('dropCourse', 'courses', [...new Set(filtered.map(i => i[cols.course]))].sort()); 
+            renderDropdown('dropEvent', 'events', [...new Set(filtered.map(i => i[cols.event]))].sort()); 
+            renderDropdown('dropFac', 'facilitators', [...new Set(filtered.map(i => i[cols.facilitator]))].sort()); 
         }
 
         function updateDashboard() {
-            const st = document.getElementById('filterStatus').value, s = document.getElementById('dateStart').value, e = document.getElementById('dateEnd').value;
+            const st = document.getElementById('filterStatus').value; 
+            const s = document.getElementById('dateStart').value; 
+            const e = document.getElementById('dateEnd').value;
+            
             currentFilteredData = rawData.filter(i => {
-                const d = new Date(i[cols.date]), dOk = (!s || d >= new Date(s)) && (!e || d <= new Date(e + 'T23:59:59'));
-                return (selectedFilters.methods.length===0 || selectedFilters.methods.includes(i[cols.method])) &&
-                       (selectedFilters.courses.length===0 || selectedFilters.courses.includes(i[cols.course])) &&
-                       (selectedFilters.events.length===0 || selectedFilters.events.includes(i[cols.event])) &&
-                       (selectedFilters.facilitators.length===0 || selectedFilters.facilitators.includes(i[cols.facilitator])) &&
-                       (selectedFilters.roles.length===0 || selectedFilters.roles.includes(i[cols.role])) &&
+                const d = new Date(i[cols.date]); 
+                const dOk = (!s || d >= new Date(s)) && (!e || d <= new Date(e + 'T23:59:59'));
+                return (selectedFilters.methods.length===0 || selectedFilters.methods.includes(i[cols.method])) && 
+                       (selectedFilters.courses.length===0 || selectedFilters.courses.includes(i[cols.course])) && 
+                       (selectedFilters.events.length===0 || selectedFilters.events.includes(i[cols.event])) && 
+                       (selectedFilters.facilitators.length===0 || selectedFilters.facilitators.includes(i[cols.facilitator])) && 
+                       (selectedFilters.roles.length===0 || selectedFilters.roles.includes(i[cols.role])) && 
                        (st==='all' || i[cols.status]===st) && dOk;
             });
-            renderKPIs(currentFilteredData); renderCharts(currentFilteredData); renderTable(currentFilteredData); renderEventSummary(currentFilteredData);
+
+            renderKPIs(currentFilteredData); 
+            renderCharts(currentFilteredData); 
+            renderTable(currentFilteredData); 
+            renderEventSummary(currentFilteredData);
         }
 
         function renderKPIs(d) {
-            const total = d.length, conc = d.filter(i => i[cols.status] === 'Completed').length;
+            const total = d.length;
+            const completed = d.filter(i => i[cols.status] === 'Completed').length;
             document.getElementById('kpiTotal').textContent = total;
-            document.getElementById('kpiCompleted').textContent = conc;
-            document.getElementById('kpiEnrolled').textContent = total - conc;
-            document.getElementById('kpiRate').textContent = total > 0 ? ((conc/total)*100).toFixed(1)+'%' : '0%';
-        }
-
-        function renderEventSummary(d) {
-            const counts = {}; d.forEach(i => { const n = i[cols.event]||'N/A'; counts[n] = (counts[n]||0)+1; });
-            document.getElementById('eventSummaryBody').innerHTML = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<tr><td class='text-[10px] py-2 border-b dark:border-slate-700'>${n}</td><td class='text-xs py-2 text-right border-b dark:border-slate-700 font-bold'>${c}</td></tr>`).join('');
-        }
-
-        function renderTable(d) {
-            document.getElementById('tableBody').innerHTML = d.slice(0, 100).map(i => `<tr><td>${i[cols.fcp]}</td><td class='font-bold'>${i[cols.name]}</td><td>${i[cols.course]}</td><td>${i[cols.event]}</td><td>${i[cols.status]}</td><td>${i[cols.role]}</td><td>${i[cols.facilitator]}</td><td>${i[cols.method]}</td></tr>`).join('');
-            document.getElementById('tableCounter').textContent = `A mostrar 100 de ${d.length} registos`;
+            document.getElementById('kpiCompleted').textContent = completed;
+            document.getElementById('kpiEnrolled').textContent = total - completed;
+            document.getElementById('kpiRate').textContent = total > 0 ? ((completed/total)*100).toFixed(1) + '%' : '0%';
         }
 
         function renderCharts(d) {
-            const isDark = document.documentElement.classList.contains('dark'), colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+            const isDark = document.documentElement.classList.contains('dark');
+            const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
+            const count = (k) => { const c = {}; d.forEach(i => c[i[k]]=(c[i[k]]||0)+1); return c; };
+
+            // Gráfico Roles
+            const rC = count(cols.role), rL = Object.keys(rC).sort((a,b)=>rC[b]-rC[a]);
+            updateChart('chartRoles', chartConfigs.chartRoles.startsWith('bar')?'bar':chartConfigs.chartRoles, { labels: rL, datasets:[{ data: rL.map(l=>rC[l]), backgroundColor: '#10b981', borderRadius: 4 }] }, getBaseOptions(chartConfigs.chartRoles, '#10b981', isDark));
+
+            // Gráfico Cursos
+            const cCounts = {}; d.forEach(i => { if(i[cols.status]==='Completed') cCounts[i[cols.course]] = (cCounts[i[cols.course]]||0)+1; });
+            const topC = Object.keys(cCounts).sort((a,b)=>cCounts[b]-cCounts[a]).slice(0,5);
+            updateChart('chartCourses', chartConfigs.chartCourses.startsWith('bar')?'bar':chartConfigs.chartCourses, { labels: topC.map(n => n.length > 15 ? n.substring(0,12)+'..' : n), datasets:[{ data: topC.map(c=>cCounts[c]), backgroundColor: '#005eb8', borderRadius: 5 }] }, getBaseOptions(chartConfigs.chartCourses, '#005eb8', isDark));
+
+            // LOGICA SOLICITADA: TOP 5 FACILITADORES (CONCLUÍDOS + CBT)
+            const isCBT = selectedFilters.methods.includes("Computer Based Training");
+            const facCounts = {};
             
-            // Funções
-            const rC = {}; d.forEach(i => rC[i[cols.role]] = (rC[i[cols.role]]||0)+1);
-            const rL = Object.keys(rC).sort((a,b)=>rC[b]-rC[a]);
-            updateChart('chartRoles', 'bar', { labels: rL, datasets:[{ data: rL.map(l=>rC[l]), backgroundColor: '#10b981' }] }, getBaseOptions('bar-h', isDark));
-
-            // Top 5 Treinamentos
-            const cC = {}; d.filter(i=>i[cols.status]==='Completed').forEach(i => cC[i[cols.course]] = (cC[i[cols.course]]||0)+1);
-            const topC = Object.keys(cC).sort((a,b)=>cC[b]-cC[a]).slice(0,5);
-            updateChart('chartCourses', 'bar', { labels: topC.map(t=>t.substring(0,15)), datasets:[{ data: topC.map(c=>cC[c]), backgroundColor: '#005eb8' }] }, getBaseOptions('bar-h', isDark));
-
-            // LOGICA CORRIGIDA: Top 5 Facilitadores (Apenas Concluídos)
-            const fC = {};
-            d.filter(i => i[cols.status] === 'Completed').forEach(i => {
-                const f = i[cols.facilitator] || 'N/A';
-                fC[f] = (fC[f] || 0) + 1;
+            d.forEach(i => {
+                const matchMethod = isCBT ? i[cols.method] === "Computer Based Training" : true;
+                if (i[cols.status] === 'Completed' && matchMethod) {
+                    facCounts[i[cols.facilitator]] = (facCounts[i[cols.facilitator]] || 0) + 1;
+                }
             });
-            const fL = Object.keys(fC).sort((a,b)=>fC[b]-fC[a]).slice(0,5);
-            updateChart('chartFacilitators', 'bar', { labels: fL, datasets:[{ label: 'Concluídos', data: fL.map(l=>fC[l]), backgroundColor: colors }] }, getBaseOptions('bar-v', isDark));
+
+            const fL = Object.keys(facCounts).sort((a, b) => facCounts[b] - facCounts[a]).slice(0, 5);
+            const fData = fL.map(l => facCounts[l]);
+            const facType = chartConfigs.chartFacilitators.startsWith('bar') ? 'bar' : 'doughnut';
+
+            updateChart('chartFacilitators', facType, { 
+                labels: fL, 
+                datasets: [{ data: fData, backgroundColor: colors, borderRadius: 5 }] 
+            }, {
+                ...getBaseOptions(facType, colors[0], isDark),
+                indexAxis: 'x', // Vertical conforme pedido
+                plugins: {
+                    ...getBaseOptions(facType, colors[0], isDark).plugins,
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const val = ctx.raw;
+                                const sum = fData.reduce((a, b) => a + b, 0);
+                                const perc = sum > 0 ? ((val/sum)*100).toFixed(1) + '%' : '0%';
+                                return ` Concluídos: ${val} (${perc})`;
+                            }
+                        }
+                    },
+                    datalabels: {
+                        display: true,
+                        color: isDark ? '#fff' : '#444',
+                        anchor: 'end', align: 'top',
+                        formatter: (val, ctx) => {
+                            const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const perc = sum > 0 ? ((val/sum)*100).toFixed(1) + '%' : '0%';
+                            return `${val}\n(${perc})`;
+                        }
+                    }
+                }
+            });
 
             // Métodos
-            const mC = {}; d.forEach(i => mC[i[cols.method]] = (mC[i[cols.method]]||0)+1);
-            const mL = Object.keys(mC);
-            updateChart('chartMethods', 'pie', { labels: mL, datasets:[{ data: mL.map(l=>mC[l]), backgroundColor: colors }] }, getBaseOptions('pie', isDark));
+            const mC = count(cols.method), mL = Object.keys(mC);
+            updateChart('chartMethods', 'pie', { labels: mL, datasets:[{ data: mL.map(l=>mC[l]), backgroundColor: colors }] }, getBaseOptions('pie', colors[1], isDark));
 
             // Timeline
             const time = new Array(12).fill(0); d.filter(i=>i[cols.status]==='Completed').forEach(i=>{ const m = new Date(i[cols.date]).getMonth(); if(!isNaN(m)) time[m]++; });
-            updateChart('chartTimeline', 'line', { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], datasets: [{ data: time, borderColor: '#3b82f6', tension: 0.3 }] }, { plugins:{legend:{display:false}}, scales:{x:{ticks:{color:isDark?'#94a3b8':'#64748b'}},y:{ticks:{color:isDark?'#94a3b8':'#64748b'}}}});
+            updateChart('chartTimeline', 'line', { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], datasets: [{ data: time, borderColor: '#3b82f6', tension: 0.3, fill: true, backgroundColor: 'rgba(59,130,246,0.1)' }] }, { plugins: { legend: { display: false }, datalabels: { display: false } } });
+        }
+
+        function getBaseOptions(t, color, isDark) { 
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            return { 
+                indexAxis: t === 'bar-h' ? 'y' : 'x', 
+                plugins: { 
+                    legend: { display: ['pie','doughnut'].includes(t), labels: { color: textColor } },
+                    datalabels: { display: true, color: isDark ? '#fff' : '#444', font: { size: 10, weight: 'bold' } }
+                },
+                scales: ['pie','doughnut'].includes(t) ? {} : { x: { ticks: { color: textColor } }, y: { ticks: { color: textColor } } }
+            }; 
         }
 
         function updateChart(id, type, data, options) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), { type, data, options: { ...options, maintainAspectRatio: false } }); }
+        function renderTable(d) { document.getElementById('tableBody').innerHTML = d.map(i => `<tr><td>${i[cols.fcp]}</td><td class='font-bold'>${i[cols.name]}</td><td>${i[cols.email]}</td><td>${i[cols.course]}</td><td>${i[cols.event]}</td><td><span class='px-2 py-0.5 rounded text-[10px] ${i[cols.status]==='Completed'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}'>${i[cols.status]}</span></td><td>${i[cols.role]}</td><td>${i[cols.facilitator]}</td><td>${i[cols.method]}</td></tr>`).join(''); }
+        function renderEventSummary(d) { const counts = {}; d.forEach(i => { const n = i[cols.event]||'N/A'; counts[n] = (counts[n]||0)+1; }); document.getElementById('eventSummaryBody').innerHTML = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<tr><td class='py-2'>${n}</td><td class='text-right font-bold'>${c}</td></tr>`).join(''); }
+        function filterTable() { const t = document.getElementById('tableSearch').value.toLowerCase(); document.querySelectorAll('#tableBody tr').forEach(tr => tr.style.display = tr.textContent.toLowerCase().includes(t) ? '' : 'none'); }
+        function resetAllFilters() { selectedFilters = { methods: [], courses: [], events: [], facilitators: [], roles: [] }; initDashboard(); }
+        function filterOptions(id, term) { document.querySelectorAll(`#${id} div`).forEach(div => { if(div.querySelector('span')) div.style.display = div.querySelector('span').textContent.toLowerCase().includes(term.toLowerCase()) ? 'flex' : 'none'; }); }
         
-        function getBaseOptions(t, isDark) {
-            return {
-                indexAxis: t === 'bar-h' ? 'y' : 'x',
-                plugins: { 
-                    legend: { display: t==='pie', labels: { color: isDark?'#cbd5e1':'#475569' } },
-                    datalabels: { color: '#fff', font: { weight: 'bold', size: 10 } }
-                },
-                scales: t==='pie' ? {} : { x: { ticks: { color: isDark?'#94a3b8':'#64748b' } }, y: { ticks: { color: isDark?'#94a3b8':'#64748b' } } }
-            };
+        async function exportDashboardToPDF() { 
+            const { jsPDF } = window.jspdf; 
+            const canvas = await html2canvas(document.getElementById('pdfArea')); 
+            const pdf = new jsPDF('p', 'mm', 'a4'); 
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width); 
+            pdf.save('Dashboard.pdf'); 
         }
 
-        function resetAllFilters() { selectedFilters = { methods: [], courses: [], events: [], facilitators: [], roles: [] }; initDashboard(); }
-        function filterTable() { const t = document.getElementById('tableSearch').value.toLowerCase(); document.querySelectorAll('#tableBody tr').forEach(tr => tr.style.display = tr.textContent.toLowerCase().includes(t) ? '' : 'none'); }
-        function exportFilteredData() { const worksheet = XLSX.utils.json_to_sheet(currentFilteredData); const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "Dados"); XLSX.writeFile(workbook, "Filtro_Exportado.xlsx"); }
+        function exportFilteredData() {
+            const ws = XLSX.utils.json_to_sheet(currentFilteredData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Dados");
+            XLSX.writeFile(wb, "Relatorio.xlsx");
+        }
     </script>
 </body>
 </html>
