@@ -188,7 +188,7 @@
                 const lastMod = response.headers.get('Last-Modified');
                 if (lastMod) {
                     const date = new Date(lastMod);
-                    document.getElementById('lastUpdateInfo').textContent = `Última atualização da base: ${date.toLocaleString('pt-BR')}`;
+                    document.getElementById('lastUpdateInfo').textContent = `Última atualização da base de dados: ${date.toLocaleString('pt-BR')}`;
                 }
 
                 const arrayBuffer = await response.arrayBuffer();
@@ -427,5 +427,6 @@
     </script>
 </body>
 </html>
+
 
 
