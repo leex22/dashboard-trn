@@ -342,7 +342,7 @@
                             label: function(context) {
                                 const dataset = context.dataset;
                                 const total = dataset.data.reduce((a, b) => a + b, 0);
-                                const value = context.parsed.y !== undefined ? context.parsed.y : context.parsed;
+                                const value = context.raw; // Correção principal aplicada aqui
                                 const percentage = ((value / total) * 100).toFixed(1) + '%';
                                 const fullLabel = dataset.fullLabels ? dataset.fullLabels[context.dataIndex] : context.label;
                                 return `${fullLabel}: ${value} (${percentage})`;
