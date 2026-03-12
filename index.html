@@ -267,7 +267,7 @@
     <div id="noData" class="max-w-md mx-auto mt-32 text-center">
         <div class="text-6xl mb-6">📊</div>
         <h2 class="text-xl font-bold">Carregando dados...</h2>
-        <p class="text-slate-500 mt-2">Buscando o arquivo dados.xlsx no diretório.</p>
+        <p class="text-slate-500 mt-2">Buscando o arquivo dados.xlsx ou dados.csv no diretório.</p>
     </div>
 
     <script>
@@ -290,16 +290,20 @@
             cluster: 'FCP_CLUSTER', date: 'ACTIVITY_DATE_TIME'
         };
 
-        // --- FUNÇÃO DE CARREGAMENTO AUTOMÁTICO ---
         window.onload = function() {
             carregarDadosAutomatico();
         };
 
         async function carregarDadosAutomatico() {
-            const nomeArquivo = 'dados.xlsx'; 
+            let response;
             try {
-                const response = await fetch(nomeArquivo);
-                if (!response.ok) throw new Error("Arquivo não encontrado ou erro de permissão.");
+                // Tenta primeiro carregar o XLSX
+                response = await fetch('dados.xlsx');
+                if (!response.ok) {
+                    // Se falhar o XLSX, tenta o CSV
+                    response = await fetch('dados.csv');
+                    if (!response.ok) throw new Error("Arquivo não encontrado.");
+                }
                 
                 const arrayBuffer = await response.arrayBuffer();
                 const data = new Uint8Array(arrayBuffer);
@@ -319,11 +323,10 @@
                 document.getElementById('noData').innerHTML = `
                     <div class="text-6xl mb-6">⚠️</div>
                     <h2 class="text-xl font-bold text-red-500">Erro ao carregar dados</h2>
-                    <p class="text-slate-500 mt-2">Certifique-se de que o arquivo <b>dados.xlsx</b> está na mesma pasta e que você está usando um servidor local.</p>
+                    <p class="text-slate-500 mt-2">Certifique-se de que o arquivo <b>dados.xlsx</b> ou <b>dados.csv</b> está na mesma pasta e que você está usando um servidor local.</p>
                 `;
             }
         }
-        // ----------------------------------------
 
         function toggleTheme() { document.documentElement.classList.toggle('dark'); updateDashboard(); }
 
