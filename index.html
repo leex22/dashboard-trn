@@ -115,7 +115,17 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96 relative" id="cardCourses">
-                    <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-sm uppercase">🏆 Top 5 Treinamentos</h3><div class="flex gap-1 items-center"><select class="chart-selector" onchange="changeChartType('chartCourses', this.value)"><option value="bar-h">Barra Horiz.</option><option value="bar-v">Barra Vert.</option><option value="pie">Pizza</option></select><button onclick="exportSingleChart('cardCourses', 'top-treinamentos')" class="btn-export-mini">PNG</button></div></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-sm uppercase">🏆 Top 5 Treinamentos</h3>
+                        <div class="flex gap-1 items-center">
+                            <select class="chart-selector" onchange="changeChartType('chartCourses', this.value)">
+                                <option value="bar-h">Barra Horiz.</option>
+                                <option value="bar-v">Barra Vert.</option>
+                                <option value="pie">Pizza</option>
+                            </select>
+                            <button onclick="exportSingleChart('cardCourses', 'top-treinamentos')" class="btn-export-mini">PNG</button>
+                        </div>
+                    </div>
                     <div class="h-80"><canvas id="chartCourses"></canvas></div>
                 </div>
                 <div class="bg-white dark:bg-darkCard p-6 rounded-xl shadow-sm h-96 relative" id="cardFacilitators">
@@ -163,7 +173,6 @@
         let chartConfigs = { chartRoles: 'bar-h', chartCourses: 'bar-h', chartFacilitators: 'doughnut', chartMethods: 'pie' };
         let cols = { fcp: 'FCP_COMBINED', name: 'Name', email: 'Email', course: 'Course Name', event: 'EVENT_NAME', status: 'STATUS', role: 'Role at FCP', facilitator: 'Partnership Facilitator', method: 'Training Method', date: 'ACTIVITY_DATE_TIME' };
 
-        // --- LEITURA AUTOMÁTICA DO DIRETÓRIO ---
         window.onload = carregarBaseAutomatica;
 
         async function carregarBaseAutomatica() {
@@ -171,29 +180,33 @@
                 let response = await fetch('dados.xlsx');
                 if (!response.ok) response = await fetch('dados.csv');
                 if (!response.ok) throw new Error("Arquivo não encontrado");
-
                 const arrayBuffer = await response.arrayBuffer();
-                const data = new Uint8Array(arrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
                 rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
-                
                 if(rawData.length > 0) {
                     cols.status = ('ACTIVITY_CODE' in rawData[0]) ? 'ACTIVITY_CODE' : 'STATUS';
                     initDashboard();
                 }
             } catch (e) {
-                document.getElementById('noData').innerHTML = "<h2 class='text-red-500 font-bold'>Erro: Arquivo 'dados.xlsx' ou 'dados.csv' não encontrado no diretório.</h2>";
+                document.getElementById('noData').innerHTML = "<h2 class='text-red-500 font-bold'>Erro: Arquivo 'dados.xlsx' ou 'dados.csv' não encontrado.</h2>";
             }
         }
 
-        // --- FUNÇÕES DO DASHBOARD (MANTIDAS) ---
         function toggleTheme() { document.documentElement.classList.toggle('dark'); updateDashboard(); }
         window.onclick = function(e) { if (!e.target.closest('.relative')) document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
         function toggleDropdown(id) { document.querySelectorAll('.dropdown-content').forEach(d => { if (d.id !== id) d.classList.remove('show'); }); document.getElementById(id).classList.toggle('show'); }
         async function exportDashboardToPDF() { const { jsPDF } = window.jspdf; const pdf = new jsPDF('p', 'mm', 'a4'); const element = document.getElementById('pdfArea'); const canvas = await html2canvas(element, { scale: 2, backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#f1f5f9' }); pdf.addImage(canvas.toDataURL('image/jpeg', 0.7), 'JPEG', 0, 0, 210, (canvas.height * 210) / canvas.width); pdf.save('Dashboard_OpEx.pdf'); }
         function changeChartType(id, type) { chartConfigs[id] = type; updateDashboard(); }
         async function exportSingleChart(id, name) { const canvas = await html2canvas(document.getElementById(id), { scale: 3 }); const link = document.createElement('a'); link.download = `${name}.png`; link.href = canvas.toDataURL(); link.click(); }
-        function initDashboard() { document.getElementById('noData').classList.add('hidden'); document.getElementById('dashboardContent').classList.remove('hidden'); renderDropdown('dropMethod', 'methods', [...new Set(rawData.map(i => i[cols.method]))].sort()); renderDropdown('dropRole', 'roles', [...new Set(rawData.map(i => i[cols.role]))].sort()); updateCascade(); }
+        
+        function initDashboard() { 
+            document.getElementById('noData').classList.add('hidden'); 
+            document.getElementById('dashboardContent').classList.remove('hidden'); 
+            renderDropdown('dropMethod', 'methods', [...new Set(rawData.map(i => i[cols.method]))].sort()); 
+            renderDropdown('dropRole', 'roles', [...new Set(rawData.map(i => i[cols.role]))].sort()); 
+            updateCascade(); 
+        }
+
         function renderDropdown(id, key, opts) {
             const container = document.getElementById(id); container.innerHTML = '<div class="search-filter-input"><input type="text" placeholder="🔍 Filtrar..." onkeyup="filterDrop(\''+id+'\', this.value)"></div>';
             opts.filter(o => o).forEach(o => {
@@ -204,10 +217,19 @@
             });
             updateBtn(key);
         }
+
         function filterDrop(id, t) { document.querySelectorAll(`#${id} .dropdown-item`).forEach(i => i.style.display = i.textContent.toLowerCase().includes(t.toLowerCase()) ? '' : 'none'); }
         function handleF(k, v) { const i = selectedFilters[k].indexOf(v); if(i>-1) selectedFilters[k].splice(i,1); else selectedFilters[k].push(v); updateBtn(k); if(k==='methods') updateCascade(); updateDashboard(); }
         function updateBtn(k) { const b = {methods:'btnMethod',courses:'btnCourse',events:'btnEvent',facilitators:'btnFac',roles:'btnRole'}[k]; document.getElementById(b).querySelector('span').textContent = selectedFilters[k].length === 0 ? 'Selecionar...' : `${selectedFilters[k].length} sel.`; }
-        function updateCascade() { const filtered = selectedFilters.methods.length > 0 ? rawData.filter(i => selectedFilters.methods.includes(i[cols.method])) : rawData; document.getElementById('statusFilterContainer').className = selectedFilters.methods.some(m => m.includes("Computer")) ? "" : "hidden"; renderDropdown('dropCourse', 'courses', [...new Set(filtered.map(i => i[cols.course]))].sort()); renderDropdown('dropEvent', 'events', [...new Set(filtered.map(i => i[cols.event]))].sort()); renderDropdown('dropFac', 'facilitators', [...new Set(filtered.map(i => i[cols.facilitator]))].sort()); }
+        
+        function updateCascade() { 
+            const filtered = selectedFilters.methods.length > 0 ? rawData.filter(i => selectedFilters.methods.includes(i[cols.method])) : rawData; 
+            document.getElementById('statusFilterContainer').className = selectedFilters.methods.some(m => m.includes("Computer")) ? "" : "hidden"; 
+            renderDropdown('dropCourse', 'courses', [...new Set(filtered.map(i => i[cols.course]))].sort()); 
+            renderDropdown('dropEvent', 'events', [...new Set(filtered.map(i => i[cols.event]))].sort()); 
+            renderDropdown('dropFac', 'facilitators', [...new Set(filtered.map(i => i[cols.facilitator]))].sort()); 
+        }
+
         function updateDashboard() {
             const st = document.getElementById('filterStatus').value; const s = document.getElementById('dateStart').value; const e = document.getElementById('dateEnd').value;
             const filtered = rawData.filter(i => {
@@ -216,21 +238,68 @@
             });
             renderKPIs(filtered); renderCharts(filtered); renderTable(filtered); renderEventSummary(filtered);
         }
+
         function renderKPIs(d) { const t = d.length; const c = d.filter(i => i[cols.status]==='Completed').length; document.getElementById('kpiTotal').textContent = t; document.getElementById('kpiCompleted').textContent = c; document.getElementById('kpiEnrolled').textContent = t-c; document.getElementById('kpiRate').textContent = t>0 ? ((c/t)*100).toFixed(1)+'%' : '0%'; }
         function renderEventSummary(d) { const counts = {}; d.forEach(i => { const n = i[cols.event]||'N/A'; counts[n] = (counts[n]||0)+1; }); document.getElementById('eventSummaryBody').innerHTML = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<tr><td class='text-xs py-2 border-b dark:border-slate-700'>${n}</td><td class='text-xs py-2 text-right border-b dark:border-slate-700 font-bold'>${c}</td></tr>`).join(''); }
-        function renderTable(d) { document.getElementById('tableBody').innerHTML = d.map(i => `<tr><td>${i[cols.fcp]||''}</td><td class='font-bold'>${i[cols.name]||''}</td><td>${i[cols.email]||''}</td><td>${i[cols.course]||''}</td><td>${i[cols.event]||''}</td><td><span class='px-2 py-0.5 rounded text-[9px] font-bold ${i[cols.status]==='Completed'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}'>${i[cols.status]}</span></td><td>${i[cols.role]||''}</td><td>${i[cols.facilitator]||''}</td><td>${i[cols.method]||''}</td></tr>`).join(''); document.getElementById('tableCounter').textContent = `Total: ${d.length}`; }
+        
+        function renderTable(d) { 
+            document.getElementById('tableBody').innerHTML = d.map(i => `<tr><td>${i[cols.fcp]||''}</td><td class='font-bold'>${i[cols.name]||''}</td><td>${i[cols.email]||''}</td><td>${i[cols.course]||''}</td><td>${i[cols.event]||''}</td><td><span class='px-2 py-0.5 rounded text-[9px] font-bold ${i[cols.status]==='Completed'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}'>${i[cols.status]}</span></td><td>${i[cols.role]||''}</td><td>${i[cols.facilitator]||''}</td><td>${i[cols.method]||''}</td></tr>`).join(''); 
+            document.getElementById('tableCounter').textContent = `Total: ${d.length}`; 
+        }
+
         function resetAllFilters() { selectedFilters = { methods: [], courses: [], events: [], facilitators: [], roles: [] }; initDashboard(); }
-        function getBaseOptions(t, isDark) { return { indexAxis: t === 'bar-h' ? 'y' : 'x', plugins: { legend: { display: ['pie','doughnut'].includes(t), labels: { color: isDark?'#94a3b8':'#64748b', font: { size: 10 } } }, datalabels: { color: '#fff', font: { size: 9, weight: 'bold' } } }, scales: ['pie','doughnut'].includes(t) ? {} : { x: { ticks: { color: isDark?'#94a3b8':'#64748b' } }, y: { ticks: { color: isDark?'#94a3b8':'#64748b' } } } }; }
+        
+        function getBaseOptions(t, color, isDark) { 
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            return { 
+                indexAxis: t === 'bar-h' ? 'y' : 'x', 
+                plugins: { 
+                    legend: { display: ['pie','doughnut'].includes(t), labels: { color: textColor, font: { size: 10 } } }, 
+                    datalabels: { 
+                        display: true, color: '#fff', font: { size: 9, weight: 'bold' }, anchor: 'center', align: 'center',
+                        formatter: (val, ctx) => {
+                            const sum = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                            const perc = ((val/sum)*100).toFixed(1) + '%';
+                            const label = ctx.dataset.fullLabels ? ctx.dataset.fullLabels[ctx.dataIndex] : '';
+                            return t.startsWith('bar') ? `${label}\n${val} (${perc})` : perc;
+                        }
+                    } 
+                }, 
+                scales: ['pie','doughnut'].includes(t) ? {} : { x: { ticks: { color: textColor, font: { size: 9 } } }, y: { ticks: { color: textColor, font: { size: 9 } } } } 
+            }; 
+        }
+
         function renderCharts(d) {
             const isDark = document.documentElement.classList.contains('dark'), colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
             const count = (k) => { const c = {}; d.forEach(i => c[i[k]]=(c[i[k]]||0)+1); return c; };
-            const updateC = (id, labels, data, type) => updateChart(id, type.startsWith('bar')?'bar':type, { labels, datasets:[{ data, backgroundColor: id.includes('Roles')?'#10b981':colors }] }, getBaseOptions(type, isDark));
-            const rC = count(cols.role), rL = Object.keys(rC).sort((a,b)=>rC[b]-rC[a]); updateC('chartRoles', rL, rL.map(l=>rC[l]), chartConfigs.chartRoles);
-            const cC = {}; d.filter(i=>i[cols.status]==='Completed').forEach(i=>cC[i[cols.course]]=(cC[i[cols.course]]||0)+1); const cL = Object.keys(cC).sort((a,b)=>cC[b]-cC[a]).slice(0,5); updateC('chartCourses', cL.map(l=>l.substring(0,12)), cL.map(l=>cC[l]), chartConfigs.chartCourses);
-            const fC = count(cols.facilitator), fL = Object.keys(fC).sort((a,b)=>fC[b]-fC[a]).slice(0,5); updateC('chartFacilitators', fL, fL.map(l=>fC[l]), chartConfigs.chartFacilitators);
-            const mC = count(cols.method), mL = Object.keys(mC); updateC('chartMethods', mL, mL.map(l=>mC[l]), chartConfigs.chartMethods);
-            const time = new Array(12).fill(0); d.filter(i=>i[cols.status]==='Completed').forEach(i=>{ const m = new Date(i[cols.date]).getMonth(); if(!isNaN(m)) time[m]++; }); updateChart('chartTimeline', 'line', { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], datasets: [{ data: time, borderColor: '#3b82f6', tension: 0.3, fill: true, backgroundColor: 'rgba(59,130,246,0.1)' }] }, { plugins: { legend: { display: false }, datalabels: { display: false } } });
+            
+            const rC = count(cols.role), rL = Object.keys(rC).sort((a,b)=>rC[b]-rC[a]);
+            updateChart('chartRoles', chartConfigs.chartRoles.startsWith('bar')?'bar':chartConfigs.chartRoles, { labels: rL, datasets:[{ data: rL.map(l=>rC[l]), backgroundColor: '#10b981', borderRadius: 4 }] }, getBaseOptions(chartConfigs.chartRoles, '#10b981', isDark));
+
+            // LOGICA REVERTIDA DO ORIGINAL PARA TOP 5 TREINAMENTOS
+            const cCounts = {}; 
+            d.forEach(i => { if(i[cols.status]==='Completed') cCounts[i[cols.course]] = (cCounts[i[cols.course]]||0)+1; });
+            const topC = Object.keys(cCounts).sort((a,b)=>cCounts[b]-cCounts[a]).slice(0,5);
+            updateChart('chartCourses', chartConfigs.chartCourses.startsWith('bar') ? 'bar' : chartConfigs.chartCourses, {
+                labels: topC.map(n => n.length > 12 ? n.substring(0,10)+'..' : n),
+                datasets: [{ 
+                    fullLabels: topC,
+                    data: topC.map(c => cCounts[c]), 
+                    backgroundColor: '#005eb8', 
+                    borderRadius: 5 
+                }]
+            }, getBaseOptions(chartConfigs.chartCourses, '#005eb8', isDark));
+
+            const fC = count(cols.facilitator), fL = Object.keys(fC).sort((a,b)=>fC[b]-fC[a]).slice(0,5);
+            updateChart('chartFacilitators', chartConfigs.chartFacilitators.startsWith('bar')?'bar':chartConfigs.chartFacilitators, { labels: fL, datasets:[{ data: fL.map(l=>fC[l]), backgroundColor: colors, borderWidth: 0 }] }, getBaseOptions(chartConfigs.chartFacilitators, colors[0], isDark));
+
+            const mC = count(cols.method), mL = Object.keys(mC);
+            updateChart('chartMethods', chartConfigs.chartMethods.startsWith('bar')?'bar':chartConfigs.chartMethods, { labels: mL, datasets:[{ data: mL.map(l=>mC[l]), backgroundColor: colors, borderWidth: 0 }] }, getBaseOptions(chartConfigs.chartMethods, colors[1], isDark));
+
+            const time = new Array(12).fill(0); d.filter(i=>i[cols.status]==='Completed').forEach(i=>{ const m = new Date(i[cols.date]).getMonth(); if(!isNaN(m)) time[m]++; });
+            updateChart('chartTimeline', 'line', { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], datasets: [{ data: time, borderColor: '#3b82f6', tension: 0.3, fill: true, backgroundColor: 'rgba(59,130,246,0.1)' }] }, { plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { ticks: { color: isDark?'#94a3b8':'#64748b' } }, y: { ticks: { color: isDark?'#94a3b8':'#64748b' } } } });
         }
+
         function updateChart(id, type, data, options) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), { type, data, options: { ...options, maintainAspectRatio: false } }); }
         function filterTable() { const t = document.getElementById('tableSearch').value.toLowerCase(); document.querySelectorAll('#tableBody tr').forEach(tr => tr.style.display = tr.textContent.toLowerCase().includes(t) ? '' : 'none'); }
     </script>
