@@ -61,7 +61,7 @@
                 <span>📄 Exportar PDF</span>
             </button>
             <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden">
-            <label for="excelFileInput" class="hidden bg-primary text-white px-5 py-2.5 rounded-lg cursor-pointer hover:bg-blue-700 transition shadow-md font-medium">📂 Upload Excel</label>
+            <label for="excelFileInput" class="bg-primary text-white px-5 py-2.5 rounded-lg cursor-pointer hover:bg-blue-700 transition shadow-md font-medium">📂 Upload Excel/CSV</label>
             <button onclick="toggleTheme()" class="bg-slate-200 dark:bg-slate-700 p-2.5 rounded-lg">🌓</button>
         </div>
     </header>
@@ -266,11 +266,27 @@
 
     <div id="noData" class="max-w-md mx-auto mt-32 text-center">
         <div class="text-6xl mb-6">📊</div>
-        <h2 class="text-xl font-bold">Carregando dados...</h2>
-        <p class="text-slate-500 mt-2">Buscando o arquivo dados.xlsx ou dados.csv no diretório.</p>
+        <h2 class="text-xl font-bold">Aguardando dados...</h2>
+        <p class="text-slate-500 mt-2">Faça o upload do seu relatório Excel ou CSV para visualizar o dashboard.</p>
     </div>
 
     <script>
+        // --- 1. CAMADA DE PROTEÇÃO COM SENHA ---
+        const SENHA_MESTRA = "1234"; 
+
+        (function() {
+            if (sessionStorage.getItem("dashboard_auth") !== "true") {
+                const p = prompt("Acesso Restrito. Digite a senha:");
+                if (p === SENHA_MESTRA) {
+                    sessionStorage.setItem("dashboard_auth", "true");
+                } else {
+                    alert("Senha incorreta!");
+                    document.body.innerHTML = "<div style='height:100vh; display:flex; align-items:center; justify-content:center;'><h1>Acesso Negado</h1></div>";
+                    window.location.reload();
+                }
+            }
+        })();
+
         Chart.register(ChartDataLabels);
 
         let rawData = [];
@@ -289,44 +305,6 @@
             facilitator: 'Partnership Facilitator', method: 'Training Method',
             cluster: 'FCP_CLUSTER', date: 'ACTIVITY_DATE_TIME'
         };
-
-        window.onload = function() {
-            carregarDadosAutomatico();
-        };
-
-        async function carregarDadosAutomatico() {
-            let response;
-            try {
-                // Tenta primeiro carregar o XLSX
-                response = await fetch('dados.xlsx');
-                if (!response.ok) {
-                    // Se falhar o XLSX, tenta o CSV
-                    response = await fetch('dados.csv');
-                    if (!response.ok) throw new Error("Arquivo não encontrado.");
-                }
-                
-                const arrayBuffer = await response.arrayBuffer();
-                const data = new Uint8Array(arrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
-                
-                rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
-                
-                if(rawData.length > 0) {
-                    const firstRow = rawData[0];
-                    cols.status = ('ACTIVITY_CODE' in firstRow) ? 'ACTIVITY_CODE' : 'STATUS';
-                    initDashboard();
-                } else {
-                    document.getElementById('noData').innerHTML = "<h2>O arquivo está vazio.</h2>";
-                }
-            } catch (error) {
-                console.error("Erro no carregamento automático:", error);
-                document.getElementById('noData').innerHTML = `
-                    <div class="text-6xl mb-6">⚠️</div>
-                    <h2 class="text-xl font-bold text-red-500">Erro ao carregar dados</h2>
-                    <p class="text-slate-500 mt-2">Certifique-se de que o arquivo <b>dados.xlsx</b> ou <b>dados.csv</b> está na mesma pasta e que você está usando um servidor local.</p>
-                `;
-            }
-        }
 
         function toggleTheme() { document.documentElement.classList.toggle('dark'); updateDashboard(); }
 
@@ -392,18 +370,27 @@
             link.click();
         }
 
+        // --- 2. LEITURA DE EXCEL E CSV ---
         document.getElementById('excelFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
             const reader = new FileReader();
+            
             reader.onload = (evt) => {
-                const workbook = XLSX.read(evt.target.result, { type: 'binary', cellDates: true });
+                let workbook;
+                const data = evt.target.result;
+                
+                // A biblioteca XLSX.read lida automaticamente com .csv ou formatos de Excel (.xlsx, .xls)
+                workbook = XLSX.read(data, { type: 'binary', cellDates: true });
+                
                 rawData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+                
                 if(rawData.length > 0) {
                     const firstRow = rawData[0];
                     cols.status = ('ACTIVITY_CODE' in firstRow) ? 'ACTIVITY_CODE' : 'STATUS';
                     initDashboard();
                 }
             };
-            reader.readAsBinaryString(e.target.files[0]);
+            reader.readAsBinaryString(file);
         });
 
         function initDashboard() {
@@ -592,7 +579,7 @@
                     },
                     datalabels: {
                         display: true,
-                        color: (ctx) => (['pie', 'doughnut'].includes(type) || !isDark) ? '#fff' : '#fff',
+                        color: '#fff',
                         font: { size: 9, weight: 'bold' },
                         anchor: 'center',
                         align: 'center',
