@@ -176,7 +176,7 @@
     <div id="noData" class="max-w-md mx-auto mt-32 text-center">
         <div class="text-6xl mb-6">📊</div>
         <h2 class="text-xl font-bold">Carregando base de dados...</h2>
-        <p class="text-slate-500 mt-2">Buscando arquivo no repositório.</p>
+        <p class="text-slate-500 mt-2">Buscando o arquivo dados.xlsx no diretório.</p>
     </div>
 
     <script>
@@ -198,7 +198,7 @@
 
         async function carregarBaseAutomatica() {
             try {
-                // Tentativa de carregar ignorando cache para garantir dados novos no GitHub
+                // Adicionado cache: "no-store" para evitar problemas de atualização no GitHub
                 const response = await fetch('dados.xlsx', { cache: "no-store" });
                 if (!response.ok) throw new Error("Arquivo não encontrado");
 
@@ -211,7 +211,7 @@
                     initDashboard();
                 }
             } catch (e) {
-                document.getElementById('noData').innerHTML = `<h2 class='text-red-500 font-bold'>Erro: Ficheiro 'dados.xlsx' não encontrado no repositório.</h2><p class='text-sm mt-2'>Certifique-se que o ficheiro está na mesma pasta que este HTML e que o nome é exatamente 'dados.xlsx'.</p>`;
+                document.getElementById('noData').innerHTML = "<h2 class='text-red-500 font-bold'>Erro: Arquivo 'dados.xlsx' não encontrado.</h2>";
             }
         }
 
@@ -312,7 +312,16 @@
         }
 
         function renderEventSummary(d) { const counts = {}; d.forEach(i => { const n = i[cols.event]||'N/A'; counts[n] = (counts[n]||0)+1; }); document.getElementById('eventSummaryBody').innerHTML = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<tr><td class='text-xs py-2 border-b dark:border-slate-700'>${n}</td><td class='text-xs py-2 text-right border-b dark:border-slate-700 font-bold'>${c}</td></tr>`).join(''); }
-        function renderTable(d) { document.getElementById('tableBody').innerHTML = d.map(i => `<tr><td>${i[cols.fcp]||''}</td><td class='font-bold'>${i[cols.name]||''}</td><td>${i[cols.email]||''}</td><td>${i[cols.course]||''}</td><td>${i[cols.event]||''}</td><td><span class='px-2 py-0.5 rounded text-[9px] font-bold ${i[cols.status]==='Completed'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}'>${i[cols.status]}</span></td><td>${i[cols.role]||''}</td><td>${i[cols.facilitator]||''}</td><td>${i[cols.method]||''}</td></tr>`).join(''); document.getElementById('tableCounter').textContent = `Total: ${d.length}`; }
+        
+        function renderTable(d) {
+            // Remove duplicatas visuais (se o cara tá inscrito e concluído no mesmo curso, mostra só o concluído)
+            const completedKeys = new Set(d.filter(i => i[cols.status] === 'Completed').map(i => `${i[cols.email]}_${i[cols.course]}`));
+            const finalTableData = d.filter(i => !(i[cols.status] === 'Enrolled' && completedKeys.has(`${i[cols.email]}_${i[cols.course]}`)));
+
+            document.getElementById('tableBody').innerHTML = finalTableData.map(i => `<tr><td>${i[cols.fcp]||''}</td><td class='font-bold'>${i[cols.name]||''}</td><td>${i[cols.email]||''}</td><td>${i[cols.course]||''}</td><td>${i[cols.event]||''}</td><td><span class='px-2 py-0.5 rounded text-[9px] font-bold ${i[cols.status]==='Completed'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}'>${i[cols.status]}</span></td><td>${i[cols.role]||''}</td><td>${i[cols.facilitator]||''}</td><td>${i[cols.method]||''}</td></tr>`).join(''); 
+            document.getElementById('tableCounter').textContent = `Total: ${finalTableData.length}`; 
+        }
+
         function exportFilteredData() { const worksheet = XLSX.utils.json_to_sheet(currentFilteredData); const workbook = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(workbook, worksheet, "Dados"); XLSX.writeFile(workbook, "Base_Filtrada.xlsx"); }
         function resetAllFilters() { selectedFilters = { methods: [], courses: [], events: [], facilitators: [], roles: [] }; initDashboard(); }
         
@@ -349,36 +358,47 @@
         function renderCharts(d) {
             const isDark = document.documentElement.classList.contains('dark'), colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
             
+            // Adesão por Função
             const rC = {}; d.forEach(i => rC[i[cols.role]] = (rC[i[cols.role]]||0)+1);
             const rL = Object.keys(rC).sort((a,b)=>rC[b]-rC[a]);
             updateChart('chartRoles', chartConfigs.chartRoles.startsWith('bar')?'bar':chartConfigs.chartRoles, { labels: rL, datasets:[{ data: rL.map(l=>rC[l]), backgroundColor: '#10b981', borderRadius: 4 }] }, getBaseOptions(chartConfigs.chartRoles, '#10b981', isDark));
 
+            // Top 5 Treinamentos (Concluídos)
             const cC = {}; d.forEach(i => { if(i[cols.status]==='Completed') cC[i[cols.course]] = (cC[i[cols.course]]||0)+1; });
             const topC = Object.keys(cC).sort((a,b)=>cC[b]-cC[a]).slice(0,5);
             updateChart('chartCourses', chartConfigs.chartCourses.startsWith('bar')?'bar':chartConfigs.chartCourses, { labels: topC.map(n=>n.length>12?n.substring(0,10)+'..':n), datasets:[{ data: topC.map(c=>cC[c]), backgroundColor: '#005eb8', borderRadius: 5 }] }, getBaseOptions(chartConfigs.chartCourses, '#005eb8', isDark));
 
-            // --- GRÁFICO FACILITADORES SOLICITADO ---
-            const cbtData = rawData.filter(i => 
-                i[cols.method] === 'Computer Based Training' && 
-                i[cols.status] === 'Completed' &&
-                (selectedFilters.courses.length === 0 || selectedFilters.courses.includes(i[cols.course]))
-            );
+            // --- LÓGICA CORRIGIDA: TOP 5 FACILITADORES (CONCLUÍDOS) ---
             const fC = {};
-            cbtData.forEach(i => { const f = i[cols.facilitator] || 'N/A'; fC[f] = (fC[f]||0)+1; });
-            const fL = Object.keys(fC).sort((a,b)=>fC[b]-fC[a]).slice(0,5);
-            updateChart('chartFacilitators', 'bar', { labels: fL, datasets:[{ label: 'Concluídos (CBT)', data: fL.map(l=>fC[l]), backgroundColor: colors, borderRadius: 5 }] }, getBaseOptions('bar-v', colors[0], isDark));
+            d.filter(i => i[cols.status] === 'Completed').forEach(i => {
+                const f = i[cols.facilitator] || 'Não Atribuído';
+                fC[f] = (fC[f] || 0) + 1;
+            });
+            const fL = Object.keys(fC).sort((a, b) => fC[b] - fC[a]).slice(0, 5);
+            
+            updateChart('chartFacilitators', chartConfigs.chartFacilitators.startsWith('bar') ? 'bar' : chartConfigs.chartFacilitators, { 
+                labels: fL, 
+                datasets: [{ 
+                    label: 'Concluídos',
+                    data: fL.map(l => fC[l]), 
+                    backgroundColor: colors, 
+                    borderWidth: 0 
+                }] 
+            }, getBaseOptions(chartConfigs.chartFacilitators, colors[0], isDark));
 
+            // Métodos
             const mC = {}; d.forEach(i => mC[i[cols.method]] = (mC[i[cols.method]]||0)+1);
             const mL = Object.keys(mC);
             updateChart('chartMethods', chartConfigs.chartMethods.startsWith('bar')?'bar':chartConfigs.chartMethods, { labels: mL, datasets:[{ data: mL.map(l=>mC[l]), backgroundColor: colors }] }, getBaseOptions(chartConfigs.chartMethods, colors[1], isDark));
 
+            // Evolução Mensal
             const time = new Array(12).fill(0); d.filter(i=>i[cols.status]==='Completed').forEach(i=>{ const m = new Date(i[cols.date]).getMonth(); if(!isNaN(m)) time[m]++; });
             updateChart('chartTimeline', 'line', { labels: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'], datasets: [{ data: time, borderColor: '#3b82f6', tension: 0.3, fill: true, backgroundColor: 'rgba(59,130,246,0.1)' }] }, { plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { ticks: { color: isDark?'#94a3b8':'#64748b' } }, y: { ticks: { color: isDark?'#94a3b8':'#64748b' } } } });
         }
 
         function updateChart(id, type, data, options) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart(document.getElementById(id), { type, data, options: { ...options, maintainAspectRatio: false } }); }
         function filterTable() { const t = document.getElementById('tableSearch').value.toLowerCase(); document.querySelectorAll('#tableBody tr').forEach(tr => tr.style.display = tr.textContent.toLowerCase().includes(t) ? '' : 'none'); }
-        function updateActiveFiltersDisplay() { /* Implementação simplificada para o GitHub */ }
+        function updateActiveFiltersDisplay() { /* Filtros ativos no topo */ }
     </script>
 </body>
 </html>
