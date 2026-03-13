@@ -258,7 +258,7 @@
                     });
                     
                     updateButtonLabel(filterKey);
-                    if (filterKey === 'methods') updateCascade();
+                    if (filterKey === 'methods' || filterKey === 'courses') updateCascade();
                     updateDashboard();
                 };
                 optionsContainer.appendChild(selectAllDiv);
@@ -299,7 +299,7 @@
             }
 
             updateButtonLabel(key);
-            if (key === 'methods') updateCascade();
+            if (key === 'methods' || key === 'courses') updateCascade();
             updateDashboard();
         }
 
@@ -310,7 +310,15 @@
         }
 
         function updateCascade() { 
-            const filtered = selectedFilters.methods.length > 0 ? rawData.filter(i => selectedFilters.methods.includes(i[cols.method])) : rawData; 
+            let filteredByMethod = selectedFilters.methods.length > 0 ? rawData.filter(i => selectedFilters.methods.includes(i[cols.method])) : rawData; 
+
+            renderDropdown('dropCourse', 'courses', [...new Set(filteredByMethod.map(i => i[cols.course]))].sort()); 
+
+            let filteredByCourse = selectedFilters.courses.length > 0 ? filteredByMethod.filter(i => selectedFilters.courses.includes(i[cols.course])) : filteredByMethod;
+
+            renderDropdown('dropEvent', 'events', [...new Set(filteredByCourse.map(i => i[cols.event]))].sort()); 
+            renderDropdown('dropFac', 'facilitators', [...new Set(filteredByCourse.map(i => i[cols.facilitator]))].sort()); 
+
             const statusContainer = document.getElementById('statusFilterContainer');
             if (selectedFilters.methods.some(m => m.trim() === "Computer Based Training")) {
                 statusContainer.classList.remove('hidden');
@@ -318,9 +326,6 @@
                 statusContainer.classList.add('hidden');
                 document.getElementById('filterStatus').value = 'all'; 
             }
-            renderDropdown('dropCourse', 'courses', [...new Set(filtered.map(i => i[cols.course]))].sort()); 
-            renderDropdown('dropEvent', 'events', [...new Set(filtered.map(i => i[cols.event]))].sort()); 
-            renderDropdown('dropFac', 'facilitators', [...new Set(filtered.map(i => i[cols.facilitator]))].sort()); 
         }
 
         function updateActiveFiltersDisplay() {
@@ -373,38 +378,29 @@
 
         function updateDashboard() {
             const st = document.getElementById('filterStatus').value; const s = document.getElementById('dateStart').value; const e = document.getElementById('dateEnd').value;
-            
-            // 1. Filtra tudo (exceto status) para tratar a regra de duplicadas do CBT corretamente
-            let baseFiltered = rawData.filter(i => {
+            currentFilteredData = rawData.filter(i => {
                 const d = new Date(i[cols.date]); const dOk = (!s || d >= new Date(s)) && (!e || d <= new Date(e + 'T23:59:59'));
-                return (selectedFilters.methods.length===0 || selectedFilters.methods.includes(i[cols.method])) && (selectedFilters.courses.length===0 || selectedFilters.courses.includes(i[cols.course])) && (selectedFilters.events.length===0 || selectedFilters.events.includes(i[cols.event])) && (selectedFilters.facilitators.length===0 || selectedFilters.facilitators.includes(i[cols.facilitator])) && (selectedFilters.roles.length===0 || selectedFilters.roles.includes(i[cols.role])) && dOk;
+                return (selectedFilters.methods.length===0 || selectedFilters.methods.includes(i[cols.method])) && (selectedFilters.courses.length===0 || selectedFilters.courses.includes(i[cols.course])) && (selectedFilters.events.length===0 || selectedFilters.events.includes(i[cols.event])) && (selectedFilters.facilitators.length===0 || selectedFilters.facilitators.includes(i[cols.facilitator])) && (selectedFilters.roles.length===0 || selectedFilters.roles.includes(i[cols.role])) && (st==='all' || i[cols.status]===st) && dOk;
             });
-
-            // 2. Aplica a regra: CBT (único por aluno/curso) vs Outros (mantém todos)
-            const uniqueCBTMap = {};
-            const otherData = [];
-            
-            baseFiltered.forEach(i => {
-                if (i[cols.method] && i[cols.method].trim() === "Computer Based Training") {
-                    const key = `${i[cols.email]}_${i[cols.course]}`;
-                    if (!uniqueCBTMap[key] || i[cols.status] === 'Completed') {
-                        uniqueCBTMap[key] = i;
-                    }
-                } else {
-                    otherData.push(i);
-                }
-            });
-
-            // 3. Junta os dados tratados e aplica o filtro final de Status
-            currentFilteredData = [...Object.values(uniqueCBTMap), ...otherData].filter(i => st === 'all' || i[cols.status] === st);
-
             renderKPIs(currentFilteredData); renderCharts(currentFilteredData); renderTable(currentFilteredData); renderEventSummary(currentFilteredData);
             updateActiveFiltersDisplay();
         }
 
         function renderKPIs(d) { 
-            const totalInscritos = d.length; 
-            const totalConcluidos = d.filter(i => i[cols.status] === 'Completed').length; 
+            const userCourseMap = {};
+            d.forEach(i => {
+                const key = `${i[cols.email]}_${i[cols.course]}`;
+                if (!userCourseMap[key]) {
+                    userCourseMap[key] = { enrolled: true, completed: false };
+                }
+                if (i[cols.status] === 'Completed') {
+                    userCourseMap[key].completed = true;
+                }
+            });
+
+            const uniqueRecords = Object.values(userCourseMap);
+            const totalInscritos = uniqueRecords.length; 
+            const totalConcluidos = uniqueRecords.filter(r => r.completed).length; 
             const totalEmAndamento = totalInscritos - totalConcluidos; 
             const taxaConclusao = totalInscritos > 0 ? ((totalConcluidos / totalInscritos) * 100).toFixed(1) : "0";
 
@@ -417,8 +413,22 @@
         function renderEventSummary(d) { const counts = {}; d.forEach(i => { const n = i[cols.event]||'N/A'; counts[n] = (counts[n]||0)+1; }); document.getElementById('eventSummaryBody').innerHTML = Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([n,c])=>`<tr><td class='text-xs py-2 border-b dark:border-slate-700'>${n}</td><td class='text-xs py-2 text-right border-b dark:border-slate-700 font-bold'>${c}</td></tr>`).join(''); }
         
         function renderTable(d) { 
-            document.getElementById('tableBody').innerHTML = d.map(i => `<tr><td>${i[cols.fcp]||''}</td><td class='font-bold'>${i[cols.name]||''}</td><td>${i[cols.email]||''}</td><td>${i[cols.course]||''}</td><td>${i[cols.event]||''}</td><td><span class='px-2 py-0.5 rounded text-[9px] font-bold ${i[cols.status]==='Completed'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}'>${i[cols.status]}</span></td><td>${i[cols.role]||''}</td><td>${i[cols.facilitator]||''}</td><td>${i[cols.method]||''}</td></tr>`).join(''); 
-            document.getElementById('tableCounter').textContent = `Total: ${d.length}`; 
+            const completedKeys = new Set();
+            d.forEach(i => {
+                if(i[cols.status] === 'Completed') {
+                    completedKeys.add(`${i[cols.email]}_${i[cols.course]}`);
+                }
+            });
+
+            const finalDisplayData = d.filter(i => {
+                if(i[cols.status] === 'Enrolled') {
+                    return !completedKeys.has(`${i[cols.email]}_${i[cols.course]}`);
+                }
+                return true;
+            });
+
+            document.getElementById('tableBody').innerHTML = finalDisplayData.map(i => `<tr><td>${i[cols.fcp]||''}</td><td class='font-bold'>${i[cols.name]||''}</td><td>${i[cols.email]||''}</td><td>${i[cols.course]||''}</td><td>${i[cols.event]||''}</td><td><span class='px-2 py-0.5 rounded text-[9px] font-bold ${i[cols.status]==='Completed'?'bg-green-100 text-green-700':'bg-amber-100 text-amber-700'}'>${i[cols.status]}</span></td><td>${i[cols.role]||''}</td><td>${i[cols.facilitator]||''}</td><td>${i[cols.method]||''}</td></tr>`).join(''); 
+            document.getElementById('tableCounter').textContent = `Total: ${finalDisplayData.length}`; 
         }
 
         function exportFilteredData() {
@@ -483,19 +493,8 @@
                     backgroundColor: '#005eb8', 
                     borderRadius: 5 
                 }]
-            }, {
-                ...getBaseOptions(chartConfigs.chartCourses, '#005eb8', isDark),
-                plugins: {
-                    ...getBaseOptions(chartConfigs.chartCourses, '#005eb8', isDark).plugins,
-                    datalabels: {
-                        display: true,
-                        color: '#FFFFFF', 
-                        font: { weight: 'bold' }
-                    }
-                }
-            });
+            }, getBaseOptions(chartConfigs.chartCourses, '#005eb8', isDark));
 
-            // --- Lógica Top 5 Facilitadores (CBT e Concluídos) ---
             const isCBT = selectedFilters.methods.includes("Computer Based Training");
             const facCounts = {};
             d.forEach(i => {
